@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+php artisan package:discover --ansi || true
+
 
 # Render sets PORT; fallback for local docker runs
 PORT="${PORT:-10000}"

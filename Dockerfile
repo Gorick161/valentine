@@ -3,7 +3,7 @@ FROM composer:2 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts
 
 # ---------- Stage 2: Frontend build (vite) ----------
 FROM node:20-alpine AS assets
@@ -35,6 +35,8 @@ COPY . .
 # Copy vendor + built assets from previous stages
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
+RUN php artisan package:discover --ansi || true
+
 
 # Optional hardening: don't ship local env
 RUN rm -f .env || true
