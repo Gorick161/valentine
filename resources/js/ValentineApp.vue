@@ -3,7 +3,7 @@
     <!-- interactive hearts canvas -->
     <canvas ref="canvasRef" class="hearts-canvas" aria-hidden="true"></canvas>
 
-    <!-- modal appears after 30s -->
+    <!-- modal appears after 5s -->
     <div v-if="showModal" class="overlay" :class="{ open: isOpen }">
       <div class="modal" :class="{ celebrate: accepted }" role="dialog" aria-modal="true">
         <h1 id="title">Willst du mein Valentinsschatzik sein?</h1>
@@ -58,7 +58,7 @@ const accepted = ref(false);
 const actionsRef = ref(null);
 const noRef = ref(null);
 
-const secondsLeft = ref(30);
+const secondsLeft = ref(10);  // GEÄNDERT: von 30 auf 10
 const progress = ref(0);
 let countdownTimer = null;
 
@@ -71,8 +71,8 @@ function accept() {
   burstHearts(90);
   startCelebrationSpawns();
 
-  // 30s countdown -> redirect
-  secondsLeft.value = 30;
+  // 10s countdown -> redirect  // GEÄNDERT: von 30s auf 10s
+  secondsLeft.value = 10;  // GEÄNDERT
   progress.value = 0;
 
   const startedAt = Date.now();
@@ -80,10 +80,10 @@ function accept() {
 
   countdownTimer = setInterval(() => {
     const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    const left = Math.max(0, 30 - elapsed);
+    const left = Math.max(0, 10 - elapsed);  // GEÄNDERT: von 30 auf 10
 
     secondsLeft.value = left;
-    progress.value = Math.min(100, (elapsed / 30) * 100);
+    progress.value = Math.min(100, (elapsed / 10) * 100);  // GEÄNDERT: von 30 auf 10
 
     if (left <= 0) {
       clearInterval(countdownTimer);
@@ -337,11 +337,11 @@ onMounted(() => {
   window.addEventListener("pointermove", onMouseMove, { passive: true });
   window.addEventListener("pointerleave", onMouseLeave, { passive: true });
 
-  // only change vs "before": show modal after 30s
+  // GEÄNDERT: show modal after 5s (statt 30s)
   showModalTimeout = setTimeout(() => {
     showModal.value = true;
     setTimeout(() => (isOpen.value = true), 120);
-  }, 30000);
+  }, 5000);  // GEÄNDERT: von 30000 auf 5000
 });
 
 onBeforeUnmount(() => {
