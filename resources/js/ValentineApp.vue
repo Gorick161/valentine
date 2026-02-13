@@ -1,28 +1,15 @@
 <template>
   <div class="page">
-    <!-- interactive hearts canvas -->
     <canvas ref="canvasRef" class="hearts-canvas" aria-hidden="true"></canvas>
 
-    <!-- modal appears after 5s -->
     <div v-if="showModal" class="overlay" :class="{ open: isOpen }">
       <div class="modal" :class="{ celebrate: accepted }" role="dialog" aria-modal="true">
         <h1 id="title">Willst du mein Valentinsschatzik sein?</h1>
         <p>Antworte Weise mein bebik.</p>
 
-        <div class="actions" ref="actionsRef" @pointermove="onPointerMove">
-          <button class="btn yes" :disabled="accepted" @click="accept">
-            {{ accepted ? "Yes ✅" : "Yes" }}
-          </button>
-
-          <button
-            class="btn no"
-            ref="noRef"
-            type="button"
-            @pointerenter="moveNo"
-            @focus="onNoFocus"
-          >
-            No
-          </button>
+        <div v-if="!accepted" class="actions" ref="actionsRef" @pointermove="onPointerMove">
+          <button class="btn yes" @click="accept">Yes</button>
+          <button class="btn no" ref="noRef" type="button" @pointerenter="moveNo" @focus="onNoFocus">No</button>
         </div>
 
         <div class="success" :class="{ visible: accepted }">
@@ -31,13 +18,17 @@
             JAAAAAAAAAAAAA WUHUUUU KUSSJU KUSSJU!
           </div>
 
-          <div class="next">
-            <div class="progress">
-              <div class="bar" :style="{ width: `${progress}%` }"></div>
+          <div class="gif-wrap" v-if="accepted">
+            <div class="tenor-gif-embed"
+              data-postid="12610103726438183428"
+              data-share-method="host"
+              data-aspect-ratio="1"
+              data-width="100%">
             </div>
-            <div class="hint">
-              Date-Auswahl in <b>{{ secondsLeft }}</b> Sekunden…
-            </div>
+          </div>
+
+          <div class="kiss-message">
+            💋 Dann küss mich da 💋
           </div>
         </div>
       </div>
@@ -46,51 +37,38 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, nextTick } from "vue";
 
-/** Modal timing */
 const showModal = ref(false);
 const isOpen = ref(false);
 let showModalTimeout = null;
 
-/** Yes/No logic */
 const accepted = ref(false);
 const actionsRef = ref(null);
 const noRef = ref(null);
-
-const secondsLeft = ref(10);  // GEÄNDERT: von 30 auf 10
-const progress = ref(0);
-let countdownTimer = null;
 
 function accept() {
   if (accepted.value) return;
   accepted.value = true;
 
-  // optional: little celebration burst
   celebratingUntil = performance.now() + 6000;
   burstHearts(90);
   startCelebrationSpawns();
 
-  // 10s countdown -> redirect  // GEÄNDERT: von 30s auf 10s
-  secondsLeft.value = 10;  // GEÄNDERT
-  progress.value = 0;
-
-  const startedAt = Date.now();
-  if (countdownTimer) clearInterval(countdownTimer);
-
-  countdownTimer = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    const left = Math.max(0, 10 - elapsed);  // GEÄNDERT: von 30 auf 10
-
-    secondsLeft.value = left;
-    progress.value = Math.min(100, (elapsed / 10) * 100);  // GEÄNDERT: von 30 auf 10
-
-    if (left <= 0) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
-      window.location.assign("/surprise");
+  // Tenor embed script laden nachdem das Element im DOM ist
+  nextTick(() => {
+    if (!document.querySelector('script[src="https://tenor.com/embed.js"]')) {
+      const script = document.createElement("script");
+      script.src = "https://tenor.com/embed.js";
+      script.async = true;
+      document.body.appendChild(script);
+    } else {
+      // Script bereits geladen, manuell triggern falls nötig
+      if (window.TENOR_EMBED_INITIALIZED) {
+        window.TENOR_EMBED_INITIALIZED();
+      }
     }
-  }, 200);
+  });
 }
 
 function moveNo() {
@@ -133,7 +111,7 @@ function onNoFocus() {
   moveNo();
 }
 
-/** ---- Canvas hearts (same behavior as before) ---- */
+/** ---- Canvas hearts ---- */
 const canvasRef = ref(null);
 
 let rafId = 0;
@@ -143,31 +121,23 @@ let w = 0;
 let h = 0;
 
 const mouse = { x: 0, y: 0, active: false };
-
 const HEART_COUNT = 70;
 const hearts = [];
-
-// Celebration bursts (optional)
 const bursts = [];
 let celebratingUntil = 0;
 
-function rand(min, max) {
-  return Math.random() * (max - min) + min;
-}
+function rand(min, max) { return Math.random() * (max - min) + min; }
 
 function resizeCanvas() {
   const canvas = canvasRef.value;
   if (!canvas) return;
-
   dpr = window.devicePixelRatio || 1;
   w = window.innerWidth;
   h = window.innerHeight;
-
   canvas.width = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   canvas.style.width = `${w}px`;
   canvas.style.height = `${h}px`;
-
   ctx = canvas.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
@@ -175,8 +145,7 @@ function resizeCanvas() {
 function spawnHeart(initial = false) {
   const y = initial ? rand(0, h) : h + rand(20, 200);
   hearts.push({
-    x: rand(0, w),
-    y,
+    x: rand(0, w), y,
     size: rand(8, 18),
     vy: rand(0.35, 1.2),
     vx: rand(-0.25, 0.25),
@@ -192,26 +161,21 @@ function drawHeart(x, y, size, rotation, alpha) {
   ctx.translate(x, y);
   ctx.rotate(rotation);
   ctx.globalAlpha = alpha;
-
   ctx.fillStyle = "#E11D48";
   ctx.beginPath();
-
   const s = size;
   ctx.moveTo(0, s * 0.35);
   ctx.bezierCurveTo(s * 0.65, -s * 0.35, s * 1.1, s * 0.45, 0, s * 1.15);
   ctx.bezierCurveTo(-s * 1.1, s * 0.45, -s * 0.65, -s * 0.35, 0, s * 0.35);
-
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 }
 
-/** bursts (optional) */
 function burstHearts(count = 60) {
   for (let i = 0; i < count; i++) {
     const angle = rand(-Math.PI * 0.05, Math.PI + Math.PI * 0.05);
     const speed = rand(2.5, 7.5);
-
     bursts.push({
       x: rand(w * 0.25, w * 0.75),
       y: rand(h * 0.45, h * 0.75),
@@ -230,10 +194,7 @@ function burstHearts(count = 60) {
 
 function startCelebrationSpawns() {
   const interval = setInterval(() => {
-    if (performance.now() > celebratingUntil) {
-      clearInterval(interval);
-      return;
-    }
+    if (performance.now() > celebratingUntil) { clearInterval(interval); return; }
     burstHearts(18);
   }, 400);
 }
@@ -241,10 +202,8 @@ function startCelebrationSpawns() {
 function tick() {
   rafId = requestAnimationFrame(tick);
   if (!ctx) return;
-
   ctx.clearRect(0, 0, w, h);
 
-  // subtle glow
   ctx.save();
   ctx.globalAlpha = 0.15;
   const g = ctx.createRadialGradient(w * 0.5, h * 0.4, 50, w * 0.5, h * 0.4, Math.max(w, h));
@@ -254,22 +213,17 @@ function tick() {
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
 
-  // IMPORTANT: floating hearts loop (this is what you were missing)
   for (let i = 0; i < hearts.length; i++) {
     const p = hearts[i];
-
     p.sway += 0.02;
     p.x += p.vx + Math.sin(p.sway) * 0.15;
     p.y -= p.vy;
     p.rot += p.vr;
-
-    // mouse repel (same feel as before)
     if (mouse.active) {
       const dx = p.x - mouse.x;
       const dy = p.y - mouse.y;
       const dist = Math.hypot(dx, dy);
       const radius = 120;
-
       if (dist < radius && dist > 0.001) {
         const strength = (1 - dist / radius) * 1.8;
         p.x += (dx / dist) * strength * 2.2;
@@ -277,82 +231,48 @@ function tick() {
         p.rot += (dx / dist) * 0.02;
       }
     }
-
-    if (p.y < -60) {
-      hearts.splice(i, 1);
-      i--;
-      spawnHeart(false);
-      continue;
-    }
-
+    if (p.y < -60) { hearts.splice(i, 1); i--; spawnHeart(false); continue; }
     if (p.x < -60) p.x = w + 60;
     if (p.x > w + 60) p.x = -60;
-
     drawHeart(p.x, p.y, p.size, p.rot, p.alpha);
   }
 
-  // bursts (only visible after Yes)
   for (let i = 0; i < bursts.length; i++) {
     const p = bursts[i];
-
-    p.vx *= p.drag;
-    p.vy *= p.drag;
-    p.vy += p.gravity;
-
-    p.x += p.vx;
-    p.y += p.vy;
-    p.rot += p.vr;
-
+    p.vx *= p.drag; p.vy *= p.drag; p.vy += p.gravity;
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr;
     p.life -= 1;
     p.alpha = Math.max(0, p.life / 90);
-
     drawHeart(p.x, p.y, p.size, p.rot, p.alpha);
-
-    if (p.life <= 0 || p.y > h + 80 || p.x < -80 || p.x > w + 80) {
-      bursts.splice(i, 1);
-      i--;
-    }
+    if (p.life <= 0 || p.y > h + 80 || p.x < -80 || p.x > w + 80) { bursts.splice(i, 1); i--; }
   }
 }
 
-function onMouseMove(e) {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-  mouse.active = true;
-}
-
-function onMouseLeave() {
-  mouse.active = false;
-}
+function onMouseMove(e) { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }
+function onMouseLeave() { mouse.active = false; }
 
 onMounted(() => {
   resizeCanvas();
-
   hearts.length = 0;
   for (let i = 0; i < HEART_COUNT; i++) spawnHeart(true);
-
   tick();
-
   window.addEventListener("resize", resizeCanvas, { passive: true });
   window.addEventListener("pointermove", onMouseMove, { passive: true });
   window.addEventListener("pointerleave", onMouseLeave, { passive: true });
 
-  // GEÄNDERT: show modal after 5s (statt 30s)
+  // Modal nach 5s einblenden
   showModalTimeout = setTimeout(() => {
     showModal.value = true;
     setTimeout(() => (isOpen.value = true), 120);
-  }, 5000);  // GEÄNDERT: von 30000 auf 5000
+  }, 5000);
 });
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
-
   window.removeEventListener("resize", resizeCanvas);
   window.removeEventListener("pointermove", onMouseMove);
   window.removeEventListener("pointerleave", onMouseLeave);
-
   if (showModalTimeout) clearTimeout(showModalTimeout);
-  if (countdownTimer) clearInterval(countdownTimer);
 });
 </script>
 
@@ -364,7 +284,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   position: relative;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-
   background: radial-gradient(900px 500px at 20% 20%, #ffd1dc, transparent 60%),
     radial-gradient(900px 600px at 80% 80%, #ff8fb1, transparent 60%),
     linear-gradient(135deg, #ffb3c7, #ff6f91);
@@ -396,7 +315,7 @@ onBeforeUnmount(() => {
 }
 
 .modal {
-  width: min(560px, 100%);
+  width: min(480px, 100%);
   background: #ffffff;
   color: #111827;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -420,7 +339,7 @@ onBeforeUnmount(() => {
 
 h1 {
   margin: 14px 0 8px;
-  font-size: 32px;
+  font-size: 30px;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -459,16 +378,8 @@ p {
   color: #fff;
   box-shadow: 0 12px 26px rgba(225, 29, 72, 0.35);
 }
-.btn.yes:hover {
-  background: #be123c;
-}
-.btn.yes:active {
-  transform: translateY(1px) scale(0.99);
-}
-.btn.yes:disabled {
-  opacity: 0.9;
-  cursor: default;
-}
+.btn.yes:hover { background: #be123c; }
+.btn.yes:active { transform: translateY(1px) scale(0.99); }
 
 .btn.no {
   background: rgba(17, 24, 39, 0.06);
@@ -486,15 +397,14 @@ p {
   color: rgba(17, 24, 39, 0.85);
   display: none;
 }
-.success.visible {
-  display: block;
-}
+.success.visible { display: block; }
 
 .success .headline {
   display: flex;
   flex-direction: column;
   gap: 6px;
   align-items: center;
+  margin-bottom: 16px;
 }
 
 .big-heart {
@@ -505,53 +415,33 @@ p {
   animation: pop 700ms ease both;
 }
 
-@keyframes pop {
-  0% {
-    transform: scale(0.6);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.12);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.next {
-  margin-top: 14px;
-}
-
-.progress {
-  height: 10px;
+.gif-wrap {
   width: 100%;
-  background: rgba(17, 24, 39, 0.08);
-  border-radius: 999px;
+  border-radius: 16px;
   overflow: hidden;
+  margin-bottom: 16px;
 }
 
-.bar {
-  height: 100%;
-  width: 0%;
-  background: #e11d48;
-  transition: width 200ms linear;
+.kiss-message {
+  margin-top: 16px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #e11d48;
+  letter-spacing: -0.01em;
+  animation: pop 600ms ease both;
+  animation-delay: 200ms;
+  opacity: 0;
+  animation-fill-mode: forwards;
 }
 
-.hint {
-  margin-top: 10px;
-  font-size: 14px;
-  color: rgba(17, 24, 39, 0.75);
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay,
-  .modal,
-  .btn {
-    transition: none !important;
-  }
-  .big-heart {
-    animation: none !important;
-  }
+  .overlay, .modal, .btn { transition: none !important; }
+  .big-heart, .kiss-message { animation: none !important; opacity: 1; }
 }
 </style>
