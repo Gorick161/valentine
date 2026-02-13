@@ -14,8 +14,8 @@
 
         <div class="success" :class="{ visible: accepted }">
           <div class="headline">
-            <span class="big-heart">💖</span>
             JAAAAAAAAAAAAA WUHUUUU KUSSJU KUSSJU!
+            <span class="big-heart">💖</span>
           </div>
 
           <div class="gif-wrap" v-if="accepted">
@@ -28,7 +28,7 @@
           </div>
 
           <div class="kiss-message">
-            💋 Dann küss mich da 💋
+            💋 Dann küss mich JETZT!!! 💋
           </div>
         </div>
       </div>
